@@ -44,6 +44,7 @@ def get_client() -> InferenceClient:
             model=settings.hf_model_id,
             token=settings.hf_api_token,
             timeout=settings.http_timeout_seconds,
+            endpoint="https://router.huggingface.co",
         )
     return _CLIENT
 
