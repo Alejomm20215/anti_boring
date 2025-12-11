@@ -29,14 +29,23 @@ Return 3-6 bullet sentences that cover the change, risks/tests, and any review s
 """
 
 
-@lru_cache(maxsize=1)
-def get_client(settings: Settings | None = None) -> InferenceClient:
-    settings = settings or get_settings()
-    return InferenceClient(
-        model=settings.hf_model_id,
-        token=settings.hf_api_token,
-        timeout=settings.http_timeout_seconds,
-    )
+_CLIENT: InferenceClient | None = None
+
+
+def get_client() -> InferenceClient:
+    """
+    Returns a singleton InferenceClient. Settings are read once from env.
+    Avoid passing Settings into lru_cache (dataclass is unhashable).
+    """
+    global _CLIENT
+    if _CLIENT is None:
+        settings = get_settings()
+        _CLIENT = InferenceClient(
+            model=settings.hf_model_id,
+            token=settings.hf_api_token,
+            timeout=settings.http_timeout_seconds,
+        )
+    return _CLIENT
 
 
 def render_prompt(payload: PRPayload) -> str:
@@ -64,7 +73,7 @@ def render_prompt(payload: PRPayload) -> str:
 
 def summarize_pr(payload: PRPayload, settings: Settings | None = None) -> str:
     settings = settings or get_settings()
-    client = get_client(settings)
+    client = get_client()
     prompt = render_prompt(payload)
     # Using text-generation; ensure your model supports it (e.g., Mixtral instruct).
     result = client.text_generation(
