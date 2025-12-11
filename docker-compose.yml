@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  pr-summarizer:
+    build: .
+    image: pr-summarizer:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  ngrok:
+    image: ngrok/ngrok:alpine
+    restart: unless-stopped
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command: ["http", "pr-summarizer:8000"]
+    depends_on:
+      - pr-summarizer
+    # Optional: expose the ngrok inspector locally to read the tunnel URL via http://localhost:4040/api/tunnels
+    ports:
+      - "4040:4040"
+
+
